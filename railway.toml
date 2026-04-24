@@ -1,7 +1,4 @@
 [build]
-builder = "dotnet"
-
-[build.buildCommand]
 command = "dotnet publish app.csproj -c Release -o out"
 
 [start]
