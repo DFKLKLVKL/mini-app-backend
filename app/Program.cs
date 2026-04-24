@@ -1,59 +1,65 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
-// PORT (Render / локально)
+//
+// =========================
+// PORT (ВАЖНО ДЛЯ RAILWAY)
+// =========================
+//
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
-// SQLite
+//
+// =========================
+// DB (SQLite)
+// =========================
+//
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=games.db"));
 
-builder.Services.AddCors(Options =>
+//
+// =========================
+// CORS (для фронта)
+// =========================
+//
+builder.Services.AddCors(options =>
 {
-    Options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin()
-        .AllowAnyHeader()
-        .AllowAnyMethod();
-    });
+    options.AddPolicy("AllowAll",
+        policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
 
 var app = builder.Build();
 
-app.UseCors();
+app.UseCors("AllowAll");
 
-
-app.MapGet("/games", async (AppDbContext db)=>
-{
-    return await db.Games.ToListAsync();
-});
-
-
-// создать БД при старте
+//
+// =========================
+// CREATE DB ON START
+// =========================
+//
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
 }
 
-/* =========================
-   WISHLIST
-========================= */
-app.MapGet("/wishlist/{userId}", async (string userId, AppDbContext db) =>
+//
+// =========================
+// GET GAMES
+// =========================
+app.MapGet("/games", async (AppDbContext db) =>
 {
-    return await db.WishList
-        .Where(w => w.UserId == userId)
-        .ToListAsync();
+    return await db.Games.ToListAsync();
 });
 
-/* =========================
-   ADD GAME
-========================= */
+//
+// =========================
+// ADD GAME
+// =========================
 app.MapPost("/games", async (Game game, AppDbContext db) =>
 {
     if (game.OldPrice > 0 && game.NewPrice > 0)
@@ -69,9 +75,10 @@ app.MapPost("/games", async (Game game, AppDbContext db) =>
     return Results.Created($"/games/{game.Id}", game);
 });
 
-/* =========================
-   DELETE GAME
-========================= */
+//
+// =========================
+// DELETE GAME
+// =========================
 app.MapDelete("/games/{id}", async (int id, AppDbContext db) =>
 {
     var game = await db.Games.FindAsync(id);
@@ -81,6 +88,17 @@ app.MapDelete("/games/{id}", async (int id, AppDbContext db) =>
     await db.SaveChangesAsync();
 
     return Results.Ok();
+});
+
+//
+// =========================
+// GET WISHLIST
+// =========================
+app.MapGet("/wishlist/{userId}", async (string userId, AppDbContext db) =>
+{
+    return await db.WishList
+        .Where(w => w.UserId == userId)
+        .ToListAsync();
 });
 
 app.Run();
