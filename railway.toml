@@ -1,5 +1,0 @@
-[build]
-command = "dotnet publish app.csproj -c Release -o out"
-
-[start]
-command = "dotnet out/app.dll"
