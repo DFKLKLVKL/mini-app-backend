@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+</head>
+<body>
+    <div class="app-container">
+
+        <div class="header">
+            <div>
+                
+                <h1>Steam Tracker</h1>
+                <p>Отслеживай скидки</p>
+
+            </div>
+            <div id="tgUserInfo"></div>
+        </div>
+
+        <div class="controls">
+            <div>
+                <button class="filter-btn active" data-filter="all">Все</button>
+                <button class="filter-btn" data-filter="wishlist">Вишлист</button>
+                <button class="filter-btn" data-filter="high">-70%</button>
+            </div>
+            <input type="text" id="searchInput" placeholder="Поиск...">
+        </div>
+
+        <div class="stats">
+            <span>Игр: <b id="totalGames">0</b></span>
+            <span>Вишлист: <b id="wishlistCount">0</b></span>
+            <span>Макс скидка: <b id="maxDiscount">0%</b></span>
+        </div>
+
+        <div id="gamesGrid" class="games-grid"></div>
+
+        <button id="refreshBtn">Обновить</button>
+
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

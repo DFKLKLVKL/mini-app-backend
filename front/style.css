@@ -1,0 +1,59 @@
+body {
+    background: #0f172a;
+    color: white;
+    font-family: Arial;
+    margin: 0;
+    padding: 20px;
+}
+
+.app-container {
+    max-width: 900px;
+    margin: auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.filter-btn {
+    padding: 6px 12px;
+    margin-right: 5px;
+    background: #1e293b;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.filter-btn.active {
+    background: #3b82f6;
+}
+
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.game-card {
+    background: #1e293b;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.game-img {
+    width: 100%;
+    border-radius: 5px;
+}
+
+button {
+    cursor: pointer;
+    margin-top: 5px;
+}
