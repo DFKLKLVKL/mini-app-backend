@@ -100,6 +100,7 @@ async function handleAddGame() {
 
 // ================= RENDER =================
 function renderGames() {
+    if (!games) return;
     const grid = document.getElementById("gamesGrid");
 
     let filtered = [...games];
@@ -199,7 +200,13 @@ document.getElementById("refreshBtn").onclick = async () => {
 
 // ================= ERROR =================
 function showError(msg) {
-    alert(msg);
+    const el = document.createElement("div");
+    el.className = "error";
+    el.innerText = msg;
+
+    document.body.appendChild(el);
+
+    setTimeout(() => el.remove(), 3000);
 }
 
 // ================= INIT =================
