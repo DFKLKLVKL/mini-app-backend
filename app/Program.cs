@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 // =========================
 //
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");  
 
 //
 // =========================
@@ -17,6 +17,9 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 //
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=games.db"));
+
+
+builder.Services.AddHttpClient<SteamService>();
 
 //
 // =========================
@@ -74,6 +77,27 @@ app.MapPost("/games", async (Game game, AppDbContext db) =>
 
     return Results.Created($"/games/{game.Id}", game);
 });
+
+
+app.MapPost("/games/{id}/update", async (int id, AppDbContext db, SteamService steam) =>
+{
+    var game = await db.Games.FindAsync(id);
+    if (game == null) return Results.NotFound();
+
+    var (oldPrice, newPrice, discount) = await steam.GetPrice(game.AppId);
+
+    game.OldPrice = oldPrice;
+    game.NewPrice = newPrice;
+    game.Discount = discount;
+
+    await db.SaveChangesAsync();
+
+    return Results.Ok(game);
+});
+
+
+
+builder.Services.AddHostedService<PriceUpdater>();
 
 //
 // =========================

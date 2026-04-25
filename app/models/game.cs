@@ -8,5 +8,6 @@ public class Game
     public decimal OldPrice{get;set;}
     public decimal NewPrice{get;set;}
     public int Discount{get;set;}
+    public int AppId{get;set;}
 
 }
