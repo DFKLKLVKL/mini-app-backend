@@ -14,8 +14,11 @@ function initTelegram() {
     if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
         const user = window.Telegram.WebApp.initDataUnsafe.user;
         userId = user.id.toString();
+
         document.getElementById("tgUserInfo").innerText =
             user.first_name || "User";
+
+        window.Telegram.WebApp.expand();
     } else {
         userId = "test-user";
         document.getElementById("tgUserInfo").innerText = "Demo";
@@ -38,7 +41,7 @@ async function loadWishlist() {
 async function addGame(game) {
     await fetch(API_URL, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(game)
     });
 
@@ -60,7 +63,7 @@ async function toggleWishlist(gameId) {
     } else {
         await fetch(WISHLIST_URL, {
             method: "POST",
-            headers: {"Content-Type": "application/json"},
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ gameId, userId })
         });
     }
@@ -70,17 +73,30 @@ async function toggleWishlist(gameId) {
 
 // ================= ADD GAME =================
 async function addGameFromForm() {
+    const name = document.getElementById("name").value.trim();
+    const imageUrl = document.getElementById("image").value.trim();
+    const appId = parseInt(document.getElementById("appId").value);
+    const oldPrice = parseFloat(document.getElementById("oldPrice").value);
+    const newPrice = parseFloat(document.getElementById("newPrice").value);
+
+    if (!name) return showError("Введите название");
+    if (!appId) return showError("Введите AppId");
+
     const game = {
-        name: document.getElementById("name").value,
-        imageUrl: document.getElementById("image").value || "https://placehold.co/400x200",
-        oldPrice: +document.getElementById("oldPrice").value,
-        newPrice: +document.getElementById("newPrice").value
+        appId,
+        name,
+        imageUrl: imageUrl || "https://placehold.co/400x200",
+        oldPrice,
+        newPrice,
+        discount: 0
     };
 
     await addGame(game);
 
+    // очистка формы
     document.getElementById("name").value = "";
     document.getElementById("image").value = "";
+    document.getElementById("appId").value = "";
     document.getElementById("oldPrice").value = "";
     document.getElementById("newPrice").value = "";
 }
@@ -107,6 +123,7 @@ function renderGames() {
         );
     }
 
+    // stats
     document.getElementById("totalGames").innerText = games.length;
     document.getElementById("wishlistCount").innerText = wishlist.length;
 
@@ -117,7 +134,7 @@ function renderGames() {
     document.getElementById("maxDiscount").innerText = max + "%";
 
     if (filtered.length === 0) {
-        grid.innerHTML = "<p>Ничего нет</p>";
+        grid.innerHTML = "<p>Ничего не найдено</p>";
         return;
     }
 
@@ -126,8 +143,8 @@ function renderGames() {
 
         return `
         <div class="card">
-            <img src="${g.imageUrl}">
-            <h3>${g.name}</h3>
+            <img src="${g.imageUrl}" onerror="this.src='https://placehold.co/400x200'"><h3>${g.name}</h3>
+
             <p><s>${g.oldPrice}</s> → ${g.newPrice}</p>
             <p>-${g.discount}%</p>
 
@@ -135,16 +152,19 @@ function renderGames() {
                 ${liked ? "❤️" : "🤍"}
             </button>
 
-            <button onclick="deleteGame(${g.id})">🗑</button>
+            <button onclick="deleteGame(${g.id})">
+                🗑
+            </button>
         </div>
         `;
     }).join("");
 }
 
-// ================= EVENTS =================
+// ================= FILTERS =================
 document.querySelectorAll(".filter-btn").forEach(btn => {
     btn.onclick = () => {
-        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".filter-btn")
+            .forEach(b => b.classList.remove("active"));
 
         btn.classList.add("active");
         currentFilter = btn.dataset.filter;
@@ -152,17 +172,24 @@ document.querySelectorAll(".filter-btn").forEach(btn => {
     };
 });
 
+// ================= SEARCH =================
 document.getElementById("searchInput").oninput = e => {
     searchQuery = e.target.value;
     renderGames();
 };
 
+// ================= BUTTONS =================
 document.getElementById("refreshBtn").onclick = async () => {
     await loadGames();
     await loadWishlist();
 };
 
 document.getElementById("addBtn").onclick = addGameFromForm;
+
+// ================= ERROR =================
+function showError(msg) {
+    alert(msg);
+}
 
 // ================= INIT =================
 async function init() {
