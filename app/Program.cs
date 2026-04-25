@@ -102,3 +102,33 @@ app.MapGet("/wishlist/{userId}", async (string userId, AppDbContext db) =>
 });
 
 app.Run();
+
+//
+// =========================
+// ADD TO WISHLIST
+// =========================
+app.MapPost("/wishlist", async (WishListItem item, AppDbContext db) =>
+{
+    db.WishList.Add(item);
+    await db.SaveChangesAsync();
+    return Results.Ok(item);
+});
+
+//
+// =========================
+// REMOVE FROM WISHLIST
+// =========================
+app.MapDelete("/wishlist/{userId}/{gameId}", async (string userId, int gameId, AppDbContext db) =>
+{
+    var item = await db.WishList
+        .FirstOrDefaultAsync(w => w.UserId == userId && w.gameId == gameId);
+
+    if (item == null) return Results.NotFound();
+
+    db.WishList.Remove(item);
+    await db.SaveChangesAsync();
+
+    return Results.Ok();
+});
+
+
