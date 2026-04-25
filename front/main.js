@@ -1,78 +1,74 @@
-const BASE_URL = "http://mini-app-backend-production-e37e.up.railway.app";
-const API_URL = `${BASE_URL}/games`;
-const WISHLIST_URL = `${BASE_URL}/wishlist`;
+import {
+    getGames,
+    addGame,
+    deleteGame as apiDeleteGame,
+    getWishlist,
+    toggleWishlistAPI
+} from "./api.js";
 
+// ================= STATE =================
 let games = [];
 let wishlist = [];
 let currentFilter = "all";
 let searchQuery = "";
-
 let userId = "guest";
 
 // ================= TELEGRAM =================
 function initTelegram() {
-    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-        const user = window.Telegram.WebApp.initDataUnsafe.user;
+    const tg = window.Telegram?.WebApp;
+
+    if (tg?.initDataUnsafe?.user) {
+        const user = tg.initDataUnsafe.user;
         userId = user.id.toString();
 
         document.getElementById("tgUserInfo").innerText =
             user.first_name || "User";
 
-        window.Telegram.WebApp.expand();
+        tg.expand();
     } else {
         userId = "test-user";
         document.getElementById("tgUserInfo").innerText = "Demo";
     }
 }
 
-// ================= API =================
+// ================= LOADER =================
+function showLoader() {
+    document.getElementById("loader")?.classList.remove("hidden");
+}
+
+function hideLoader() {
+    document.getElementById("loader")?.classList.add("hidden");
+}
+
+// ================= DATA =================
 async function loadGames() {
-    const res = await fetch(API_URL);
-    games = await res.json();
-    renderGames();
+    try {
+        showLoader();
+        games = await getGames();
+        renderGames();
+    } catch (e) {
+        console.error(e);
+        showError("Ошибка загрузки игр");
+    } finally {
+        hideLoader();
+    }
 }
 
 async function loadWishlist() {
-    const res = await fetch(`${WISHLIST_URL}/${userId}`);
-    wishlist = await res.json();
-    renderGames();
-}
-
-async function addGame(game) {
-    await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(game)
-    });
-
-    await loadGames();
-}
-
-async function deleteGame(id) {
-    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-    await loadGames();
-}
-
-async function toggleWishlist(gameId) {
-    const exists = wishlist.some(w => w.gameId === gameId);
-
-    if (exists) {
-        await fetch(`${WISHLIST_URL}/${userId}/${gameId}`, {
-            method: "DELETE"
-        });
-    } else {
-        await fetch(WISHLIST_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ gameId, userId })
-        });
+    try {
+        showLoader();
+        wishlist = await getWishlist(userId);
+        renderGames();
+    } catch (e) {
+        console.error(e);
+        showError("Ошибка загрузки вишлиста");
+    } finally {
+        hideLoader();
     }
-
-    await loadWishlist();
 }
 
 // ================= ADD GAME =================
-async function addGameFromForm() {
+async function handleAddGame() {
     const name = document.getElementById("name").value.trim();
     const imageUrl = document.getElementById("image").value.trim();
     const appId = parseInt(document.getElementById("appId").value);
@@ -93,15 +89,16 @@ async function addGameFromForm() {
 
     await addGame(game);
 
-    // очистка формы
     document.getElementById("name").value = "";
     document.getElementById("image").value = "";
     document.getElementById("appId").value = "";
     document.getElementById("oldPrice").value = "";
     document.getElementById("newPrice").value = "";
+
+    await loadGames();
 }
 
-// ================= UI =================
+// ================= RENDER =================
 function renderGames() {
     const grid = document.getElementById("gamesGrid");
 
@@ -133,7 +130,7 @@ function renderGames() {
 
     document.getElementById("maxDiscount").innerText = max + "%";
 
-    if (filtered.length === 0) {
+    if (!filtered.length) {
         grid.innerHTML = "<p>Ничего не найдено</p>";
         return;
     }
@@ -143,7 +140,10 @@ function renderGames() {
 
         return `
         <div class="card">
-            <img src="${g.imageUrl}" onerror="this.src='https://placehold.co/400x200'"><h3>${g.name}</h3>
+            <img src="${g.imageUrl}" 
+                 onerror="this.src='https://placehold.co/400x200'">
+
+            <h3>${g.name}</h3>
 
             <p><s>${g.oldPrice}</s> → ${g.newPrice}</p>
             <p>-${g.discount}%</p>
@@ -152,13 +152,24 @@ function renderGames() {
                 ${liked ? "❤️" : "🤍"}
             </button>
 
-            <button onclick="deleteGame(${g.id})">
-                🗑
-            </button>
+            <button onclick="deleteGame(${g.id})">🗑</button>
         </div>
         `;
     }).join("");
 }
+
+// ================= GLOBAL ACTIONS =================
+window.toggleWishlist = async (gameId) => {
+    const exists = wishlist.some(w => w.gameId === gameId);
+
+    await toggleWishlistAPI(userId, gameId, exists);
+    await loadWishlist();
+};
+
+window.deleteGame = async (id) => {
+    await apiDeleteGame(id);
+    await loadGames();
+};
 
 // ================= FILTERS =================
 document.querySelectorAll(".filter-btn").forEach(btn => {
@@ -173,18 +184,18 @@ document.querySelectorAll(".filter-btn").forEach(btn => {
 });
 
 // ================= SEARCH =================
-document.getElementById("searchInput").oninput = e => {
+document.getElementById("searchInput").oninput = (e) => {
     searchQuery = e.target.value;
     renderGames();
 };
 
 // ================= BUTTONS =================
+document.getElementById("addBtn").onclick = handleAddGame;
+
 document.getElementById("refreshBtn").onclick = async () => {
     await loadGames();
     await loadWishlist();
 };
-
-document.getElementById("addBtn").onclick = addGameFromForm;
 
 // ================= ERROR =================
 function showError(msg) {
