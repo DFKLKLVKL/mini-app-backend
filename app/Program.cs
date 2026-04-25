@@ -1,5 +1,5 @@
-using System.Reflection.Metadata.Ecma335;
 using Microsoft.EntityFrameworkCore;
+using mini_app.DTO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +19,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // SERVICES
 // =========================
 builder.Services.AddHttpClient<SteamService>();
-builder.Services.AddHostedService<PriceUpdater>();
 builder.Services.AddScoped<GameService>();
+builder.Services.AddHostedService<PriceUpdater>();
 
 // =========================
 // CORS
@@ -37,9 +37,6 @@ var app = builder.Build();
 
 app.UseCors("AllowAll");
 
-
-builder.Services.AddDbContext<AppDbContext>();
-builder.Services.AddScoped<GameService>();
 // =========================
 // DB INIT
 // =========================
@@ -52,20 +49,35 @@ using (var scope = app.Services.CreateScope())
 // =========================
 // GAMES
 // =========================
-app.MapGet("/games", async (GameService service) =>{
-    await service.GetAll();
-});
 
-app.MapPost("/games", async (Game game, GameService service) =>
+// GET ALL
+app.MapGet("/games", async (GameService service) =>
 {
-    return await service.Add(game);
+    var games = await service.GetAll();
+
+    return Results.Ok(games.Select(g => new GameDto(
+        g.Id,
+        g.AppId,
+        g.Name,
+        g.ImageUrl,
+        g.OldPrice,
+        g.NewPrice,
+        g.Discount
+    )));
 });
 
+// CREATE
+app.MapPost("/games", async (CreateGameDto dto, GameService service) =>
+{
+    var game = await service.Add(dto);
+    return Results.Created($"/games/{game.Id}", game);
+});
+
+// DELETE
 app.MapDelete("/games/{id}", async (int id, GameService service) =>
 {
-    return await service.Delete(id)
-    ?Results.Ok()
-    :Results.NotFound();
+    var ok = await service.Delete(id);
+    return ok ? Results.Ok() : Results.NotFound();
 });
 
 // =========================
@@ -91,8 +103,11 @@ app.MapPost("/games/{id}/update", async (int id, AppDbContext db, SteamService s
 // WISHLIST
 // =========================
 app.MapGet("/wishlist/{userId}", async (string userId, AppDbContext db) =>
-    await db.WishList.Where(w => w.UserId == userId).ToListAsync()
-);
+{
+    return await db.WishList
+        .Where(w => w.UserId == userId)
+        .ToListAsync();
+});
 
 app.MapPost("/wishlist", async (WishListItem item, AppDbContext db) =>
 {

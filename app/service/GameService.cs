@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using mini_app.DTO;
 
 public class GameService
 {
@@ -9,22 +10,24 @@ public class GameService
         _db = db;
     }
 
-    // GET ALL
     public async Task<List<Game>> GetAll()
     {
         return await _db.Games.ToListAsync();
     }
 
-    // ADD GAME
-    public async Task<Game> Add(Game game)
+    public async Task<Game> Add(CreateGameDto dto)
     {
-        // расчет скидки
-        if (game.OldPrice > 0 && game.NewPrice > 0)
+        var game = new Game
         {
-            game.Discount = (int)Math.Round(
-                (1 - (decimal)game.NewPrice / game.OldPrice) * 100
-            );
-        }
+            AppId = dto.AppId,
+            Name = dto.Name,
+            ImageUrl = dto.ImageUrl ?? "https://placehold.co/400x200",
+            OldPrice = dto.OldPrice,
+            NewPrice = dto.NewPrice,
+            Discount = dto.OldPrice > 0
+                ? (int)Math.Round((1 - dto.NewPrice / dto.OldPrice) * 100)
+                : 0
+        };
 
         _db.Games.Add(game);
         await _db.SaveChangesAsync();
@@ -32,7 +35,6 @@ public class GameService
         return game;
     }
 
-    // DELETE GAME
     public async Task<bool> Delete(int id)
     {
         var game = await _db.Games.FindAsync(id);
