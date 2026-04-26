@@ -1,3 +1,5 @@
+import { act } from "react";
+
 const BASE_URL = "http://mini-app-backend-production-e37e.up.railway.app";
 
 // ========== GAMES ==========
@@ -20,6 +22,13 @@ export async function deleteGame(id) {
     await fetch(`${BASE_URL}/games/${id}`, {
         method: "DELETE"
     });
+}
+
+export async function updateGame(id) {
+    await fetch('${BASE_URL}/games/${id}/update', {
+        method: "POST"
+    });
+    
 }
 
 // ========== WISHLIST ==========

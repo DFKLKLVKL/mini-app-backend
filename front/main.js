@@ -45,10 +45,9 @@ async function loadGames() {
     try {
         showLoader();
         games = await getGames();
-        renderGames();
     } catch (e) {
         console.error(e);
-        showToast("Ошибка");
+        showToast("Ошибка загрузки игр");
     } finally {
         hideLoader();
     }
@@ -57,15 +56,12 @@ async function loadGames() {
 
 async function loadWishlist() {
     try {
-        showLoader();
         wishlist = await getWishlist(userId);
-        renderGames();
     } catch (e) {
         console.error(e);
         showToast("Ошибка загрузки вишлиста");
-    } finally {
-        hideLoader();
     }
+    renderGames();
 }
 
 // ================= ADD GAME =================
@@ -88,21 +84,23 @@ async function handleAddGame() {
         discount: 0
     };
 
-    await addGame(game);
+    try {
+        await addGame(game);
+        await loadGames();
+    } catch (e) {
+        console.error(e);
+        showToast("Ошибка добавления");
+    }
 
-    document.getElementById("name").value = "";
-    document.getElementById("image").value = "";
-    document.getElementById("appId").value = "";
-    document.getElementById("oldPrice").value = "";
-    document.getElementById("newPrice").value = "";
-
-    await loadGames();
+    // clear form
+    ["name", "image", "appId", "oldPrice", "newPrice"]
+        .forEach(id => document.getElementById(id).value = "");
 }
 
 // ================= RENDER =================
 function renderGames() {
-    if (!games) return;
     const grid = document.getElementById("gamesGrid");
+    if (!grid) return;
 
     let filtered = [...games];
 
@@ -113,16 +111,17 @@ function renderGames() {
     }
 
     if (currentFilter === "high") {
-        filtered = filtered.filter(g => g.discount >= 70);
+        filtered = filtered.filter(g => (g.discount || 0) >= 70);
     }
 
     if (searchQuery) {
+        const q = searchQuery.toLowerCase();
         filtered = filtered.filter(g =>
-            g.name.toLowerCase().includes(searchQuery.toLowerCase())
+            g.name?.toLowerCase().includes(q)
         );
     }
 
-    // stats
+    // stats (safe)
     document.getElementById("totalGames").innerText = games.length;
     document.getElementById("wishlistCount").innerText = wishlist.length;
 
@@ -154,8 +153,7 @@ function renderGames() {
                 ${liked ? "❤️" : "🤍"}
             </button>
 
-            <button onclick="deleteGame(${g.id})">🗑</button>
-        </div>
+            <button onclick="deleteGame(${g.id})">🗑</button></div>
         `;
     }).join("");
 }
@@ -164,13 +162,21 @@ function renderGames() {
 window.toggleWishlist = async (gameId) => {
     const exists = wishlist.some(w => w.gameId === gameId);
 
-    await toggleWishlistAPI(userId, gameId, exists);
-    await loadWishlist();
+    try {
+        await toggleWishlistAPI(userId, gameId, exists);
+        await loadWishlist();
+    } catch (e) {
+        showToast("Ошибка вишлиста");
+    }
 };
 
 window.deleteGame = async (id) => {
-    await apiDeleteGame(id);
-    await loadGames();
+    try {
+        await apiDeleteGame(id);
+        await loadGames();
+    } catch (e) {
+        showToast("Ошибка удаления");
+    }
 };
 
 // ================= FILTERS =================
@@ -199,14 +205,17 @@ document.getElementById("refreshBtn").onclick = async () => {
     await loadWishlist();
 };
 
-// ================= ERROR =================
-function showToast(message){
+// ================= TOAST =================
+function showToast(message) {
     const toast = document.getElementById("toast");
+    if (!toast) return;
+
     toast.innerText = message;
     toast.classList.remove("hidden");
+
     setTimeout(() => {
         toast.classList.add("hidden");
-    },2500);
+    }, 2500);
 }
 
 // ================= INIT =================
