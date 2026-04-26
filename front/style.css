@@ -425,3 +425,22 @@ footer {
         transform: rotate(360deg);
     }
 }
+
+
+
+.toast{
+    position: flex;
+    bottom: 20px;
+    left: 5%;
+    transform: translateX(-50%);
+    background: #111 ;
+    padding: 12px 20px;
+    border-radius: 10px;
+    opacity: 0.95;
+    z-index: 9999;
+
+}
+
+.hidden{
+    display: none;
+}

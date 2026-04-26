@@ -69,8 +69,15 @@ app.MapGet("/games", async (GameService service) =>
 // CREATE
 app.MapPost("/games", async (CreateGameDto dto, GameService service) =>
 {
-    var game = await service.Add(dto);
-    return Results.Created($"/games/{game.Id}", game);
+    try
+    {
+        var game = await service.Add(dto);
+        return Results.Created($"/games/{game.Id}", game);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 // DELETE

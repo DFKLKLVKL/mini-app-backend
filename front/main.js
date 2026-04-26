@@ -48,10 +48,11 @@ async function loadGames() {
         renderGames();
     } catch (e) {
         console.error(e);
-        showError("Ошибка загрузки игр");
+        showToast("Ошибка");
     } finally {
         hideLoader();
     }
+    renderGames();
 }
 
 async function loadWishlist() {
@@ -61,7 +62,7 @@ async function loadWishlist() {
         renderGames();
     } catch (e) {
         console.error(e);
-        showError("Ошибка загрузки вишлиста");
+        showToast("Ошибка загрузки вишлиста");
     } finally {
         hideLoader();
     }
@@ -75,8 +76,8 @@ async function handleAddGame() {
     const oldPrice = parseFloat(document.getElementById("oldPrice").value);
     const newPrice = parseFloat(document.getElementById("newPrice").value);
 
-    if (!name) return showError("Введите название");
-    if (!appId) return showError("Введите AppId");
+    if (!name) return showToast("Введите название");
+    if (!appId) return showToast("Введите AppId");
 
     const game = {
         appId,
@@ -199,14 +200,13 @@ document.getElementById("refreshBtn").onclick = async () => {
 };
 
 // ================= ERROR =================
-function showError(msg) {
-    const el = document.createElement("div");
-    el.className = "error";
-    el.innerText = msg;
-
-    document.body.appendChild(el);
-
-    setTimeout(() => el.remove(), 3000);
+function showToast(message){
+    const toast = document.getElementById("toast");
+    toast.innerText = message;
+    toast.classList.remove("hidden");
+    setTimeout(() => {
+        toast.classList.add("hidden");
+    },2500);
 }
 
 // ================= INIT =================
