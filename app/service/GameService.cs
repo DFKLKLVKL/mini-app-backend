@@ -15,18 +15,19 @@ public class GameService
         return await _db.Games.ToListAsync();
     }
 
-    public async Task<Game> Add(CreateGameDto dto)
+    public async Task<Game> Add(CreateGameDto dto, SteamService steam)
     {
+        var (name, image) = await steam.GetGameInfo(dto.AppId);
+        var (oldPrice, newPrice, discount) = await steam.GetPrice(dto.AppId);
+
         var game = new Game
         {
             AppId = dto.AppId,
-            Name = dto.Name,
-            ImageUrl = dto.ImageUrl ?? "https://placehold.co/400x200",
-            OldPrice = dto.OldPrice,
-            NewPrice = dto.NewPrice,
-            Discount = dto.OldPrice > 0
-                ? (int)Math.Round((1 - dto.NewPrice / dto.OldPrice) * 100)
-                : 0
+            Name = name,
+            ImageUrl = image,
+            OldPrice = oldPrice,
+            NewPrice = newPrice,
+            Discount = discount
         };
 
         _db.Games.Add(game);
